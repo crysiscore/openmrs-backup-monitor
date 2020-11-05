@@ -1,4 +1,12 @@
 library(RMySQL)
+library(stringr)
+library(mailR)
+library(writexl)
+
+
+setwd('/home/agnaldo/Git/monitorar-backups-openmrs') 
+
+
 source(file = 'config.R')
 source(file = 'misc_functions.R')
 
@@ -12,11 +20,13 @@ con_openmrs = dbConnect(
   port = openmrs.port
 )
 
-db_names <- c("1_junho","1_maio","albasine","altomae","bagamoio","chamanculo","hulene","josemacamo","josemacamo_hg","magoanine","polana_canico","porto","xipamanine","zimpeto")
+db_names <- c("1_junho","1_maio","albasine","altomae","bagamoio","chamanculo","hulene","josemacamo","josemacamo_hg","polana_canico","porto","xipamanine","zimpeto")
+
 
 for(i in 1:length(db_names)){
   
   db_name <- db_names[i]
+  
   
   # check if there is a record on report db
   record_count <- getMySQLData(con.mysql = con_openmrs,mysql.query = paste0("select count(*) as total from report.daily_log where us_name ='",db_name,"' ;"))
@@ -47,20 +57,60 @@ for(i in 1:length(db_names)){
     count_encounter <- getMySQLData(con.mysql = con_openmrs,mysql.query = paste0("select count(*) as total from ", db_name,".encounter ;"))
     count_last_inserted_encounter <- getMySQLData(con.mysql = con_openmrs,mysql.query = paste0("select total_last_encounter as total from report.daily_log 
                                                                                                where us_name ='",db_name,"' order by date desc limit 1;"))
-    if( !is.na(count_encounter$total) & !is.na(count_last_inserted_encounter$total) ){
+   
+     if( !is.na(count_encounter$total) & !is.na(count_last_inserted_encounter$total) ){
       
       count_new_rows <- count_encounter$total - count_last_inserted_encounter$total
       if (count_new_rows > 0){
+      
         # new rows
         # insert records into report db
         insert_query <- paste0(
           " INSERT INTO report.daily_log(us_name, table_name, date, total_last_encounter, n_rows_inserted) VALUES ( '",db_name ,"' ",
           ", 'encounter' , ", " now()", ", ", count_encounter$total, " , ", count_new_rows , " ) ;")
-        dbExecute(conn = con_openmrs,statement = insert_query )
+         dbExecute(conn = con_openmrs,statement = insert_query )
+         
+         #last_sync_date <- getMySQLData(con.mysql = con_openmrs,mysql.query = paste0("select date  from report.daily_log 
+         #                                                                                     where us_name ='",db_name,"' order by date desc limit 1;"))
+         
+         update_last_sync_date_query <- paste0("update  report.sync_status set last_sync = curdate() where  us_name ='", db_name,"' ;")
+         dbExecute(conn = con_openmrs,statement = update_last_sync_date_query )
+      } else {
+        last_sync_date <- getMySQLData(con.mysql = con_openmrs,mysql.query = paste0("select date  from report.daily_log 
+                                                                                               where us_name ='",db_name,"' order by date desc limit 1;"))
+        if(!is.na(last_sync_date)){
+          if(nrow(last_sync_date)>0){
+            last_sync_date <- substr(last_sync_date$date, 1,10)
+            print(paste0("US: ",db_name, " nao sincronizou novos dados no dia :", Sys.Date()))
+            print(paste0( "A ultima sincronizacao foi no dia: ", last_sync_date ))
+          } else {
+            print(paste0("US: ",db_name, " nao sincronizou novos dados no dia: ", Sys.Date()))
+            
+          }
+        }
+
+        
       }
       
     }
 
   }
   
+}
+
+last_sync <- getMySQLData(con.mysql = con_openmrs, mysql.query = paste0("select * from report.sync_status ;"))
+if(!is.na(last_sync)){
+   names(last_sync)[3] <- "data_ultima_sincr"
+   write_xlsx(x = last_sync,path =paste0(getwd(), '/sync_status.xlsx'))
+   
+   
+   send.mail(from = "mea.ccs.backups@gmail.com",
+             to = c("agnaldosamuel3@gmail.com", "agnaldosamuel@ccsaude.org.mz"),
+             #replyTo = c("Reply to someone else <someone.else@gmail.com>")
+             subject = paste0("Report de backups - ",Sys.Date()),
+             body = " Prezados segue no anexo o status da sincronizacao dos backups openmrs",
+             smtp = list(host.name = "smtp.gmail.com", port = 465, user.name = "mea.ccs.backups", passwd = "Borbolet@2020", ssl = TRUE),
+             authenticate = TRUE,
+             send = TRUE,
+             attach.files =paste0(getwd(), '/sync_status.xlsx')  )
 }
