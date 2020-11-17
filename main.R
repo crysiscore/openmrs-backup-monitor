@@ -5,6 +5,7 @@ library(writexl)
 
 
 setwd('/home/agnaldo/Git/monitorar-backups-openmrs') 
+#setwd('/home/ccsadmin/R/projects/monitorar-backups-openmrs') 
 
 
 source(file = 'config.R')
@@ -20,7 +21,7 @@ con_openmrs = dbConnect(
   port = openmrs.port
 )
 
-db_names <- c("1_junho","1_maio","albasine","altomae","bagamoio","chamanculo","hulene","josemacamo","josemacamo_hg","polana_canico","porto","xipamanine","zimpeto")
+db_names <-processFile("unidades_sanitarias.txt")
 
 
 for(i in 1:length(db_names)){

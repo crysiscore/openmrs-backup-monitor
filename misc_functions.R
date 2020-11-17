@@ -7,3 +7,20 @@ getMySQLData <- function(con.mysql, mysql.query) {
   return(data)
   
 }
+
+
+processFile = function(filepath) {
+  con = file(filepath, "r")
+  vec_us <- c()
+  while ( TRUE ) {
+    line = readLines(con, n = 1)
+    if ( length(line) == 0 ) {
+      break
+    }
+    #print(line)
+    vec_us <- c(vec_us, line)
+  }
+  
+  close(con)
+  vec_us
+}
