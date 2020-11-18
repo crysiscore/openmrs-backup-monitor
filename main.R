@@ -105,8 +105,15 @@ if(!is.na(last_sync)){
    write_xlsx(x = last_sync,path =paste0(getwd(), '/sync_status.xlsx'))
    
    
-   send.mail(from = "mea.ccs.backups@gmail.com",
-             to = c("agnaldosamuel3@gmail.com", "agnaldosamuel@ccsaude.org.mz"),
+    #pendentes "alcinobuque@ccsaude.org.mz"
+   
+  send.mail(from = "mea.ccs.backups@gmail.com",
+             to = c("mauriciotimecane@ccsaude.org.mz","agnaldosamuel@ccsaude.org.mz",
+                    "antoniomanaca@ccsaude.org.mz","waltermacueia@ccsaude.org.mz","brunomadeira@ccsaude.org.mz",
+                    "leoneluqueio@ccsaude.org.mz",  ,"deligenciasambo@ccsaude.org.mz",
+                    "tchezaraul@ccsaude.org.mz", "reginaldojetimane@ccsaude.org.mz","isabeldjeco@ccsaude.org.mz",
+                    "marciajasse@ccsaude.org.mz", "edsonmoreira@ccsaude.org.mz", "angelomanhique@ccsaude.org.mz",
+                    "joaomandlate@ccsaude.org.mz"),
              #replyTo = c("Reply to someone else <someone.else@gmail.com>")
              subject = paste0("Report de backups - ",Sys.Date()),
              body = " Prezados segue no anexo o status da sincronizacao dos backups openmrs",
